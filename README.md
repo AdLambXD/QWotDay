@@ -39,6 +39,19 @@ GitHub Actions 定时触发
 
 `data/state.json` 的作用有两个：一是避免 30 天内重复发同一句，二是每天产生一次提交，防止公共仓库 60 天无活动后定时任务被 GitHub 自动禁用。
 
+### 项目结构
+
+```text
+src/index.mjs      主流程
+src/qzone.mjs      Cookie / g_tk / 发布 / 回读
+src/hitokoto.mjs   一言抓取
+src/format.mjs     日期与文案模板
+src/config.mjs     环境变量与 .env 读取
+scripts/login.mjs  本地扫码登录
+scripts/check.mjs  本地校验 Cookie
+data/state.json    发布记录
+```
+
 ## 已知限制（请先读）
 
 1. **Cookie 会过期，且无法自动续期。** QQ 空间的网页登录态（`p_skey` / `skey`）不提供刷新接口，`p_skey` 通常能维持数周，`skey` 更短。失效后 Action 会失败并给你发邮件，重新获取一次 Cookie 即可（约 1 分钟）。
@@ -188,6 +201,13 @@ npm run login -- --push
 ```
 
 脚本会打开一个有头浏览器，用手机 QQ 扫码后自动收集 `uin` / `skey` / `p_skey` / `pt4_token`，校验有效后写入 `.env.local`（已加入 `.gitignore`）。
+
+> 国内网络下载 Chromium 很慢时，可以先设置镜像再安装：
+>
+> ```powershell
+> $env:PLAYWRIGHT_DOWNLOAD_HOST='https://npmmirror.com/mirrors/playwright'
+> npx playwright install chromium
+> ```
 
 ---
 
