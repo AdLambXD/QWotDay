@@ -1,0 +1,20 @@
+{
+  "name": "qwotday",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "每天把 hitokoto 每日一言自动发布到 QQ 空间",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "post": "node src/index.mjs",
+    "dry": "node src/index.mjs --dry",
+    "check": "node scripts/check.mjs",
+    "login": "node scripts/login.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.49.1"
+  }
+}

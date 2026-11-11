@@ -1,0 +1,62 @@
+name: 每日一言 · QQ空间
+
+on:
+  schedule:
+    # GitHub Actions 使用 UTC：23:17 UTC = 北京时间次日 07:17
+    # 避开整点高峰，减少被延迟或丢弃的概率
+    - cron: '17 23 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: '只演练，不实际发布'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: qzone-daily
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+
+    steps:
+      - name: 检出仓库
+        uses: actions/checkout@v4
+
+      - name: 准备 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 随机延迟（仅定时触发）
+        if: github.event_name == 'schedule'
+        run: sleep $((RANDOM % 600))
+
+      - name: 发布每日一言
+        env:
+          QZONE_COOKIE: ${{ secrets.QZONE_COOKIE }}
+          QZONE_UIN: ${{ secrets.QZONE_UIN }}
+          POST_TEMPLATE: ${{ vars.POST_TEMPLATE }}
+          POST_TAG: ${{ vars.POST_TAG }}
+          HITOKOTO_CATEGORIES: ${{ vars.HITOKOTO_CATEGORIES }}
+          STRICT_VERIFY: ${{ vars.STRICT_VERIFY }}
+          DRY_RUN: ${{ github.event.inputs.dry_run == 'true' && '1' || '' }}
+        run: node src/index.mjs
+
+      - name: 记录发布状态
+        if: success() && github.event.inputs.dry_run != 'true'
+        run: |
+          if [ -z "$(git status --porcelain data/state.json)" ]; then
+            echo "状态没有变化，跳过提交。"
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add data/state.json
+          git commit -m "chore: 记录 $(TZ=Asia/Shanghai date +%F) 的每日一言"
+          git push
