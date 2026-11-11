@@ -136,7 +136,26 @@ export async function inspectCookie({ cookie, uin, gtk, timeoutMs = 20000 }) {
     if (authErrorFrom(cardText) || card?.code === -3000) {
       return { ok: false, qzonetoken: '', reason: 'Cookie 已失效（接口要求重新登录）' };
     }
-    if (card?.code === 0 || card?.data) {
+
+    // 资料卡接口改版过几次：老版本有 code/data，新版本直接返回 uin + nickname
+    const cardUin = String(card?.uin ?? card?.data?.uin ?? '')
+      .replace(/^o/i, '')
+      .replace(/\D/g, '');
+    const cardOk =
+      card?.code === 0 ||
+      Boolean(card?.data) ||
+      Boolean(card?.nickname) ||
+      (cardUin !== '' && cardUin === String(uin));
+
+    if (cardOk) {
+      return { ok: true, qzonetoken: '' };
+    }
+
+    // 资料卡也判不出来时，退一步看主页是不是登录态页面（token 可能是空字符串）
+    const loggedInHome =
+      !looksLikeLoginPage(html) &&
+      /g_qzonetoken|emotion_cgi_publish|qzreferrer|hostuin/.test(html);
+    if (loggedInHome) {
       return { ok: true, qzonetoken: '' };
     }
 
