@@ -250,8 +250,11 @@ GitHub 的 cron 是 UTC 且允许延迟；整点最拥堵，所以本项目用�
 
 ## 安全说明
 
-- Cookie 等同账号登录凭证，**不要**提交到仓库、截图或发给别人。
-- 本项目只把 Cookie 放在 GitHub Secrets 里，代码和日志都不会打印完整 Cookie。
+- `QZONE_COOKIE` **只存放在 GitHub Actions Secrets**，不会进入 Git 仓库内容，`git clone`、Fork、公开网页和 API 都拿不到；Secrets 加密存储且创建后不可读回。
+- 但公共仓库的 **Actions 日志是公开的**，所以代码里绝不打印 Cookie（本项目只输出 QQ 号和 `g_tk`）。如果你修改代码，请保持这个约定。
+- 有仓库写权限的人可以修改 workflow 读取 Secret。请开启 2FA，不要随意给别人写权限；不要在 Issue、PR、截图中粘贴 Cookie。
+- 如果你连“密钥存在公共仓库的 Secrets 设置里”都不接受，可以把仓库转成 Private，或改用「公共代码仓 + 私有运行仓」模式；私有仓库同样有每月 2000 分钟的免费额度，本项目只消耗约 45 分钟/月。
+- Cookie 等同账号登录凭证，**不要**提交到仓库、截图或发给别人。怀疑泄露时，去 QQ 安全中心退出所有设备，Cookie 会立即失效。
 - Fork 无法读取原仓库的 Secrets。
 - 本项目与腾讯无关，使用风险自负，建议不要用主号。
 
