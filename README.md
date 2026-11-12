@@ -13,7 +13,8 @@
 ```text
 ヾ(•ω•`)o | 26年11月11日 一言
 
-⌈ 经历这种痛苦的人，我一个就够了！ ⌋
+⌈  经历这种痛苦的人，我一个就够了！  ⌋
+
 ——莲华《美少女万华镜·理与迷宫的少女》
 ```
 
@@ -113,7 +114,8 @@ data/state.json    发布记录
 ```text
 ヾ(•ω•`)o | {shortDate} 一言
 
-⌈ {quote} ⌋
+⌈  {quote}  ⌋
+
 {attribution}
 ```
 
@@ -122,14 +124,15 @@ data/state.json    发布记录
 ```text
 ヾ(•ω•`)o | 26年11月12日 一言
 
-⌈ 儿童散学归来早，忙趁东风放纸鸢 ⌋
+⌈  儿童散学归来早，忙趁东风放纸鸢  ⌋
+
 ——高鼎《村居》
 ```
 
 单行写法：
 
 ```text
-ヾ(•ω•`)o | {shortDate} 一言\n\n⌈ {quote} ⌋\n{attribution}
+ヾ(•ω•`)o | {shortDate} 一言\n\n⌈  {quote}  ⌋\n\n{attribution}
 ```
 
 可用占位符：

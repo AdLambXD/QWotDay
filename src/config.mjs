@@ -4,7 +4,8 @@ import { resolve } from 'node:path';
 
 export const DEFAULT_TEMPLATE = `ヾ(•ω•\`)o | {shortDate} 一言
 
-⌈ {quote} ⌋
+⌈  {quote}  ⌋
+
 {attribution}`;
 
 export const DEFAULT_TAG = '#每日一言';
