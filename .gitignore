@@ -4,6 +4,8 @@ node_modules/
 .qzone-auth/
 logs/
 scripts/refresh-hidden.vbs
+deploy/ntqq/
+deploy/napcat/config/
 *.log
 .DS_Store
 Thumbs.db

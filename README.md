@@ -41,13 +41,16 @@ GitHub Actions 定时触发
 
 ```text
 src/index.mjs      主流程
+src/server.mjs     云主机入口（从 NapCat 取 Cookie 后走同一套流程）
+src/napcat.mjs     NapCat /get_cookies 封装
 src/qzone.mjs      Cookie / g_tk / 发布 / 回读
 src/hitokoto.mjs   一言抓取
 src/format.mjs     日期与文案模板
 src/config.mjs     环境变量与 .env 读取
 scripts/login.mjs  Playwright 扫码登录（备选）
-scripts/mint.mjs   从本机 QQ 客户端换票（推荐）
+scripts/mint.mjs   从本机 QQ 客户端换票
 scripts/check.mjs  本地校验 Cookie
+deploy/            云主机部署（Docker + NapCat + cron）
 data/state.json    发布记录
 ```
 
@@ -58,7 +61,22 @@ data/state.json    发布记录
 3. **定时不是精确的。** GitHub 官方说明 `schedule` 可能延迟，极端情况下会丢弃当次运行；工作流里已经加了 0–10 分钟随机延迟和上报失败。
 4. **公共仓库 60 天无提交会禁用定时任务。** 本项目每天提交 `data/state.json`，正常使用不会触发；如果你长时间停用，记得回来点一下 Enable。
 
-如果上面第 1、2 条无法接受，可以看文末的「备选方案」。
+如果上面第 1、2 条无法接受，用下面的 **B 方案**。
+
+---
+
+## 两种部署方式
+
+| | **A. GitHub Actions**（默认） | **B. 云主机 + NapCat** |
+| --- | --- | --- |
+| 谁在发帖 | GitHub 的服务器 | 你自己的云主机 |
+| 登录态 | Cookie，会过期，要手动/半自动续 | NapCat 常驻在线，**每次现取现用，不会过期** |
+| 电脑要开着吗 | 偶尔开一次换票就行 | **完全不用** |
+| 成本 | 免费 | 免费（Oracle Cloud 永久免费额度） |
+| 门槛 | 复制一次 Cookie | 会 SSH，约 40 分钟一次性配置 |
+
+下面第 1~5 节讲的是 **A 方案**。想彻底摆脱 Cookie 过期，直接看
+**[deploy/README.md](deploy/README.md)**（B 方案完整步骤）。
 
 ---
 

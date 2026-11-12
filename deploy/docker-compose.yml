@@ -1,0 +1,25 @@
+# NapCat（QQ NT 协议端）
+# 启动：docker compose up -d
+# 日志：docker logs -f napcat          （首次启动会打印 WebUI token）
+# 升级：docker compose pull && docker compose up -d
+
+services:
+  napcat:
+    image: mlikiowa/napcat-docker:latest
+    container_name: napcat
+    restart: unless-stopped
+    environment:
+      # 让容器内写出的文件属于当前用户，避免权限问题（id -u / id -g 的返回值）
+      - NAPCAT_UID=${NAPCAT_UID:-1000}
+      - NAPCAT_GID=${NAPCAT_GID:-1000}
+      - TZ=Asia/Shanghai
+    ports:
+      # OneBot HTTP 接口：只监听本机，机器人脚本直接 127.0.0.1 访问
+      - '127.0.0.1:3000:3000'
+      # WebUI：扫码登录用，登录完成后建议改成 127.0.0.1:6099:6099 再关掉安全组端口
+      - '6099:6099'
+    volumes:
+      - ./napcat/config:/app/napcat/config
+      - ./ntqq:/app/.config/QQ
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'

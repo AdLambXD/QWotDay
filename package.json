@@ -13,7 +13,8 @@
     "dry": "node src/index.mjs --dry",
     "check": "node scripts/check.mjs",
     "login": "node scripts/login.mjs",
-    "refresh": "node scripts/mint.mjs"
+    "refresh": "node scripts/mint.mjs",
+    "server": "node src/server.mjs"
   },
   "devDependencies": {
     "playwright": "^1.49.1"
