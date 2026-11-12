@@ -48,6 +48,13 @@ jobs:
           DRY_RUN: ${{ github.event.inputs.dry_run == 'true' && '1' || '' }}
         run: node src/index.mjs
 
+      - name: 记录 Cookie 存活
+        if: always()
+        env:
+          COOKIE_MINTED_AT: ${{ vars.COOKIE_MINTED_AT }}
+          JOB_STATUS: ${{ job.status }}
+        run: node scripts/cookie-age.mjs
+
       - name: 记录发布状态
         if: always() && github.event.inputs.dry_run != 'true'
         run: |

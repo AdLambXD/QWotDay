@@ -47,7 +47,8 @@ src/qzone.mjs      Cookie / g_tk / 发布 / 回读
 src/hitokoto.mjs   一言抓取
 src/format.mjs     日期与文案模板
 src/config.mjs     环境变量与 .env 读取
-scripts/login.mjs  本地扫码登录
+scripts/login.mjs  Playwright 扫码登录（备选）
+scripts/mint.mjs   从本机 QQ 客户端换票（推荐）
 scripts/check.mjs  本地校验 Cookie
 data/state.json    发布记录
 ```
@@ -187,20 +188,42 @@ npm run check
 npm run post
 ```
 
-### 扫码登录（推荐，省去手动复制 Cookie）
+### 自动续期（推荐）：从本机 QQ 客户端换票
+
+QQ 桌面端登录后会在 `4300-4308` 上开一个本地服务，可以从中取到 `clientkey`（即 a2），再走
+`ssl.ptlogin2.qq.com/jump` → `check_sig` 换出带 `p_skey` 的空间 Cookie。
+
+```bash
+# 写入 .env.local（需要 QQ 桌面端正在运行并已登录）
+npm run refresh
+
+# 同时更新仓库 Secret（需要 GitHub CLI：gh auth login）
+npm run refresh -- --push
+```
+
+实测结论：
+
+- `clientkey` **绑定客户端在线状态**，QQ 退出后再换票会返回 `code 69：QQ客户端已经下线`；所以「把 a2 存进 Actions 天天换票」不可行。
+- 但**已经换出来的 Cookie 在 QQ 退出后仍然有效**，因此只需要在 QQ 在线时定期刷新一次 Secret。
+
+Windows 上可以一键注册计划任务（开机 2 分钟后 + 每 6 小时执行一次）：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\install-task.ps1
+```
+
+日志在 `logs\refresh.log`。PC 关机期间不影响 Actions 发帖，用的是上一次换到的 Cookie。
+
+### 备选：Playwright 扫码登录
 
 ```bash
 npm install
 npx playwright install chromium
-
-# 扫码后自动生成 .env.local
-npm run login
-
-# 扫码 + 自动更新仓库 Secret（需要安装并登录 GitHub CLI：gh auth login）
-npm run login -- --push
+npm run login            # 扫码后写入 .env.local
+npm run login -- --push  # 顺带更新 Secret
 ```
 
-脚本会打开一个有头浏览器，用手机 QQ 扫码后自动收集 `uin` / `skey` / `p_skey` / `pt4_token`，校验有效后写入 `.env.local`（已加入 `.gitignore`）。
+适合没有装 QQ 桌面端的机器。注意浏览器会话的 Cookie 更容易被 QQ 风控下线，不如上面的客户端换票稳定。
 
 > 国内网络下载 Chromium 很慢时，可以先设置镜像再安装：
 >
@@ -238,7 +261,7 @@ GitHub 的 cron 是 UTC 且允许延迟；整点最拥堵，所以本项目用�
 当前只发纯文字。带图需要额外调用图片上传接口，稳定性也更差，暂未实现。
 
 **Q：Cookie 能自动续期吗？**
-不能。腾讯没有提供公开的续期接口；所有免费方案都需要偶尔手动更新一次登录态。想完全零维护可以看下面的备选方案。
+可以，但需要一台装着 QQ 桌面端的机器偶尔在线：`npm run refresh -- --push`（或计划任务 `scripts\install-task.ps1`）会在 QQ 在线时换出新 Cookie 并更新 Secret。腾讯没有提供纯服务端的续期接口，`clientkey`(a2) 绑定客户端在线状态，所以无法做到「只存一个密钥在云端自动续期」。
 
 **Q：会不会封号？**
 有概率触发风控，所以建议：用小号、每天 1 条、纯文字、不要短时间反复重试。本项目已经做了随机延迟和失败重试上限。

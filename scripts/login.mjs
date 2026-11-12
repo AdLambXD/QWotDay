@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // 本地扫码登录 QQ 空间，生成 Cookie 并写入 .env.local（可选同步到 GitHub Secret）
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import { cookieUin, hash33, inspectCookie, parseCookie } from '../src/qzone.mjs';
@@ -63,12 +63,35 @@ function remoteRepo() {
   return match ? match[1] : '';
 }
 
+function resolveGh() {
+  const candidates = [
+    process.env.GH_PATH,
+    'C:/Program Files/GitHub CLI/gh.exe',
+    process.env.LOCALAPPDATA ? `${process.env.LOCALAPPDATA}/GitHubCLI/gh.exe` : '',
+  ].filter(Boolean);
+
+  for (const candidate of candidates) {
+    if (existsSync(candidate)) return candidate;
+  }
+
+  const where = spawnSync('where.exe', ['gh'], { encoding: 'utf8' });
+  const first = String(where.stdout || '')
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)[0];
+
+  return where.status === 0 && first && existsSync(first) ? first : '';
+}
+
 function pushSecret(repo, name, value) {
-  const result = spawnSync(
-    'gh',
-    ['secret', 'set', name, '--repo', repo, '--body-file', '-'],
-    { input: value, stdio: ['pipe', 'inherit', 'inherit'] },
-  );
+  const ghPath = resolveGh();
+  if (!ghPath) return false;
+
+  // gh 2.x 的 secret set 从 stdin 读取值（没有 --body-file 参数）
+  const result = spawnSync(ghPath, ['secret', 'set', name, '--repo', repo], {
+    input: value,
+    stdio: ['pipe', 'inherit', 'inherit'],
+  });
 
   return !result.error && result.status === 0;
 }
