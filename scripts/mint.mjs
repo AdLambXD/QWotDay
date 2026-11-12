@@ -7,6 +7,7 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import https from 'node:https';
 import { resolve } from 'node:path';
 
+import { loadEnvFiles } from '../src/config.mjs';
 import { parseCookie, hash33, inspectCookie } from '../src/qzone.mjs';
 
 const USER_AGENT =
@@ -159,7 +160,14 @@ async function findLocalQQ(preferredUin) {
     const uins = [...result.text.matchAll(/"uin":(\d+)/g)].map((match) => match[1]);
     if (uins.length === 0) continue;
 
-    const uin = preferredUin && uins.includes(preferredUin) ? preferredUin : uins[0];
+    if (preferredUin && !uins.includes(preferredUin)) {
+      throw new Error(
+        `当前 QQ 登录的是 ${uins.join(' / ')}，与 QZONE_UIN=${preferredUin} 不一致，已拒绝换票。` +
+          `请在 QQ 左下角切换到 ${preferredUin} 后再试。`,
+      );
+    }
+
+    const uin = preferredUin || uins[0];
     return { port, token, uin, uins, jar };
   }
 
@@ -226,6 +234,12 @@ async function verify({ uin, cookie }) {
 function writeEnvLocal({ uin, cookie }) {
   const path = resolve('.env.local');
   const lines = existsSync(path) ? readFileSync(path, 'utf8').split(/\r?\n/) : [];
+
+  // 首次生成后固定 QZONE_UIN，避免某次 QQ 登错号时把项目悄悄换到别人的空间
+  const pinnedUin = (lines
+    .map((line) => line.match(/^\s*QZONE_UIN\s*=\s*(\d+)\s*$/))
+    .find(Boolean) || [])[1];
+
   const kept = lines.filter(
     (line) => line.trim() && !/^QZONE_(COOKIE|UIN)\s*=/.test(line.trim()) && !line.startsWith('# 由'),
   );
@@ -233,7 +247,7 @@ function writeEnvLocal({ uin, cookie }) {
   const content = [
     '# 由 npm run refresh 生成，请勿提交到仓库',
     `QZONE_COOKIE="${cookie}"`,
-    `QZONE_UIN=${uin}`,
+    `QZONE_UIN=${pinnedUin || uin}`,
     ...kept,
     '',
   ].join('\n');
@@ -303,6 +317,7 @@ function markMintedAt(ghPath, repo) {
 }
 
 async function main() {
+  loadEnvFiles();
   const push = process.argv.includes('--push');
   const preferredUin = (process.env.QZONE_UIN || '').replace(/\D/g, '');
 
