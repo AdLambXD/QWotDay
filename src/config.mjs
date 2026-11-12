@@ -2,13 +2,10 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-export const DEFAULT_TEMPLATE = `{date} {weekday}
+export const DEFAULT_TEMPLATE = `ヾ(•ω•\`)o | {shortDate} 一言
 
-{quote}
-
-{attribution}
-
-{tag}`;
+⌈ {quote} ⌋
+{attribution}`;
 
 export const DEFAULT_TAG = '#每日一言';
 export const DEFAULT_CATEGORIES = ['d', 'i', 'k'];

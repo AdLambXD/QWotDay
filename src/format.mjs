@@ -29,6 +29,7 @@ export function getDateParts(timeZone) {
   return {
     iso: `${year}-${month}-${day}`,
     display: `${year}年${Number(month)}月${Number(day)}日`,
+    short: `${year.slice(-2)}年${Number(month)}月${Number(day)}日`,
     weekday: valueOf('weekday'),
   };
 }
@@ -39,12 +40,13 @@ export function renderPost({ template, quote, tag, timeZone }) {
   const source = cleanInline(quote.from);
 
   let attribution = '';
-  if (author && source) attribution = `—— ${author}《${source}》`;
-  else if (source) attribution = `—— ${source}`;
-  else if (author) attribution = `—— ${author}`;
+  if (author && source) attribution = `——${author}《${source}》`;
+  else if (source) attribution = `——《${source}》`;
+  else if (author) attribution = `——${author}`;
 
   const values = {
     date: date.display,
+    shortDate: date.short,
     weekday: date.weekday,
     quote: quote.text,
     author,
@@ -54,7 +56,7 @@ export function renderPost({ template, quote, tag, timeZone }) {
   };
 
   let text = template.replace(
-    /\{(date|weekday|quote|author|source|attribution|tag)\}/g,
+    /\{(date|shortDate|weekday|quote|author|source|attribution|tag)\}/g,
     (_, key) => values[key] ?? '',
   );
 
