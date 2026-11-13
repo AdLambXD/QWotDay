@@ -106,6 +106,12 @@ NAPCAT_TOKEN=${TOKEN}
 QZONE_UIN=${TARGET_UIN}
 
 TIMEZONE=Asia/Shanghai
+
+# 同步 Cookie 到 GitHub Secret（备用通道）用，格式 owner/repo；留空则不同步
+GITHUB_REPO=
+
+# 发帖失败时用 NapCat 给这个 QQ 发提醒；留空则不提醒
+ALERT_QQ=
 EOF
 fi
 chmod 600 "$APP_DIR/.env"
