@@ -11,11 +11,11 @@ services:
     image: mlikiowa/napcat-docker:latest
     container_name: napcat
     restart: unless-stopped
-    # -q 指定快速登录的 QQ 号：有了它，重启容器不用重新扫码
-    command: ['-q', '${NAPCAT_QQ:-}']
     environment:
       - NAPCAT_UID=${NAPCAT_UID:-0}
       - NAPCAT_GID=${NAPCAT_GID:-0}
+      # 官方镜像用 ACCOUNT 这个环境变量做「快速登录」，等价于 qq --no-sandbox -q <QQ>
+      - ACCOUNT=${NAPCAT_QQ:-}
       - TZ=Asia/Shanghai
     ports:
       # 都只监听本机：机器人脚本走 127.0.0.1，WebUI 走 SSH 隧道
