@@ -69,11 +69,21 @@ const ALERT_QQ = String(process.env.ALERT_QQ || '').replace(/\D/g, '');
 const ALERT_STAMP = process.env.ALERT_STAMP || '/var/log/.qwotday-sync-alert';
 const API = String(process.env.NAPCAT_API_URL || 'http://127.0.0.1:3000').replace(/\/+$/, '');
 const TOKEN = String(process.env.NAPCAT_TOKEN || '').trim();
+const ALLOWED_UIN = String(process.env.QZONE_UIN || '').replace(/\D/g, '');
 
-/** 同一天只提醒一次，避免每 6 小时刷屏 */
+const TIMEZONE = process.env.TIMEZONE || 'Asia/Shanghai';
+
+/** 同一天只提醒一次，避免每 6 小时刷屏（用配置的时区判断"今天"） */
+function todayStr() {
+  const now = new Date();
+  const parts = new Intl.DateTimeFormat('zh-CN', { timeZone: TIMEZONE, year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(now);
+  const find = (type) => parts.find(p => p.type === type)?.value || '';
+  return `${find('year')}-${find('month')}-${find('day')}`;
+}
+
 function alertAlreadySentToday() {
   try {
-    return readFileSync(ALERT_STAMP, 'utf8').trim() === new Date().toISOString().slice(0, 10);
+    return readFileSync(ALERT_STAMP, 'utf8').trim() === todayStr();
   } catch {
     return false;
   }
@@ -81,7 +91,7 @@ function alertAlreadySentToday() {
 
 function markAlertSent() {
   try {
-    writeFileSync(ALERT_STAMP, `${new Date().toISOString().slice(0, 10)}\n`, 'utf8');
+    writeFileSync(ALERT_STAMP, `${todayStr()}\n`, 'utf8');
   } catch {
     /* 写不了就算了 */
   }
@@ -91,7 +101,7 @@ async function sendAlert(message) {
   if (!ALERT_QQ) return;
 
   try {
-    await fetch(`${API}/send_private_msg`, {
+    const response = await fetch(`${API}/send_private_msg`, {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
@@ -100,7 +110,19 @@ async function sendAlert(message) {
       body: JSON.stringify({ user_id: Number(ALERT_QQ), message }),
       signal: AbortSignal.timeout(15000),
     });
-    markAlertSent();
+    const text = await response.text();
+    let ok = false;
+    try {
+      const json = JSON.parse(text);
+      ok = json.status === 'ok' && json.retcode === 0;
+    } catch {
+      ok = text.includes('"status":"ok"');
+    }
+    if (ok) {
+      markAlertSent();
+    } else {
+      console.error(`⚠️  提醒发送失败：${text.slice(0, 200)}`);
+    }
   } catch (error) {
     console.error(`⚠️  提醒发送失败：${error.message}`);
   }
@@ -116,6 +138,13 @@ async function main() {
   if (!repo) throw new Error('不知道要推送到哪个仓库，请设置 GITHUB_REPO=owner/repo');
 
   const { cookie, uin } = await fetchNapCatCookie();
+
+  // 校验：只允许配置的小号发帖，防止登错号
+  if (ALLOWED_UIN && ALLOWED_UIN !== uin) {
+    throw new Error(
+      `NapCat 登录的是 ${uin}，但配置只允许 ${ALLOWED_UIN} 发帖。已拒绝同步，防止把错误账号的 Cookie 推到 Secret。`,
+    );
+  }
 
   const map = parseCookie(cookie);
   const gtk = hash33(map.get('p_skey') || map.get('skey') || '');

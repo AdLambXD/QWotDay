@@ -70,13 +70,15 @@ function parseTag(raw) {
   return value;
 }
 
-function positiveNumber(raw, fallback, { allowZero = false } = {}) {
-  if (raw === undefined || String(raw).trim() === '') return fallback;
+function positiveNumber(raw, fallback, { allowZero = false, warnKey = '' } = {}) {
+  const rawStr = String(raw ?? '').trim();
+  if (rawStr === '') return fallback;
 
-  const value = Number(raw);
-  if (!Number.isFinite(value)) return fallback;
-  if (value < 0) return fallback;
-  if (value === 0 && !allowZero) return fallback;
+  const value = Number(rawStr);
+  if (!Number.isFinite(value) || value < 0 || (value === 0 && !allowZero)) {
+    if (warnKey) console.warn(`⚠️  ${warnKey} 无效（${rawStr}），使用默认值 ${fallback}`);
+    return fallback;
+  }
   return value;
 }
 
@@ -97,8 +99,8 @@ export function readConfig() {
     verifyDelayMs:
       positiveNumber(process.env.VERIFY_DELAY_SECONDS, 45, { allowZero: true }) * 1000,
     dedupeDays: positiveNumber(process.env.DEDUPE_DAYS, 30),
-    // 每天最多发几条；0 表示不做限制
-    maxPostsPerDay: positiveNumber(process.env.MAX_POSTS_PER_DAY, 0, { allowZero: true }),
+    // 每天最多发几条；默认 2 条，设为 0 表示不做限制（不建议，会有多发风险）
+    maxPostsPerDay: positiveNumber(process.env.MAX_POSTS_PER_DAY, 2, { allowZero: true, warnKey: 'MAX_POSTS_PER_DAY' }),
     timeZone: (process.env.TIMEZONE || 'Asia/Shanghai').trim(),
     statePath: (process.env.STATE_PATH || 'data/state.json').trim(),
   };

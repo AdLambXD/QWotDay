@@ -24,5 +24,10 @@ services:
     volumes:
       - ./napcat/config:/app/napcat/config
       - ./ntqq:/app/.config/QQ
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
     extra_hosts:
       - 'host.docker.internal:host-gateway'

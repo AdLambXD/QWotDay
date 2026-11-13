@@ -127,6 +127,7 @@ async function main() {
 
   // 每天条数上限：超了就跳过（GitHub Actions 备用通道靠它避免多发）
   if (config.maxPostsPerDay > 0 && config.cookie && !config.dryRun) {
+    let todayCount = -1; // -1 表示“无法检查”
     try {
       const recent = await recentPostContents({
         cookie: config.cookie,
@@ -134,7 +135,7 @@ async function main() {
         gtk,
         num: 20,
       });
-      const todayCount = recent.filter((item) => item.includes(date.short)).length;
+      todayCount = recent.filter((item) => item.includes(date.short)).length;
 
       if (todayCount >= config.maxPostsPerDay) {
         console.log(
@@ -144,6 +145,12 @@ async function main() {
       }
       console.log(`   今天已发 ${todayCount}/${config.maxPostsPerDay} 条`);
     } catch (error) {
+      // 检查失败时：Actions 备用通道采用 fail-closed（跳过），主通道采用 fail-open（警告后继续）
+      const isBackupChannel = !process.env.NAPCAT_API_URL;
+      if (isBackupChannel) {
+        console.log(`⚠️  检查今日已发条数失败（${error.message}），备用通道采用保守策略，跳过本次。`);
+        return;
+      }
       warn(`检查今日已发条数失败，继续执行：${error.message}`);
     }
   }
@@ -166,9 +173,15 @@ async function main() {
   console.log('→ 校验登录态…');
   const check = await inspectCookie({ cookie: config.cookie, uin, gtk });
   if (!check.ok) {
-    throw new QzoneAuthError(check.reason);
+    // 网络错误不当作登录态失效，给出更友好的提示
+    if (check.isNetworkError) {
+      warn(`网络不稳定，暂无法校验登录态：${check.reason}，继续尝试发布…`);
+    } else {
+      throw new QzoneAuthError(check.reason);
+    }
+  } else {
+    console.log('✅ Cookie 有效');
   }
-  console.log('✅ Cookie 有效');
 
   console.log('→ 发布说说…');
   let result = null;
@@ -187,6 +200,27 @@ async function main() {
     } catch (error) {
       if (error instanceof QzoneAuthError) throw error;
       lastError = error;
+
+      // 在重试前先检查是不是已经发出去了（避免超时后重复发）
+      if (attempt < 3) {
+        try {
+          const recent = await recentPostContents({
+            cookie: config.cookie,
+            uin,
+            gtk,
+            num: 5,
+          });
+          const needle = normalizeForMatch(text).slice(0, 30);
+          if (recent.some((item) => item.includes(needle))) {
+            console.log('⚠️  发布接口超时，但内容已出现在空间里，不再重试。');
+            result = { tid: null, duplicate: true };
+            break;
+          }
+        } catch {
+          // 检查失败时继续重试
+        }
+      }
+
       if (attempt === 3) break;
 
       const waitMs = attempt === 1 ? 15000 : 45000;
@@ -197,7 +231,18 @@ async function main() {
 
   if (!result) throw lastError;
 
-  console.log(`✅ 发布成功${result.tid ? `（tid=${result.tid}）` : ''}`);
+  // 辅助函数：把正文 normalize 一下方便匹配（和 qzone.mjs 里一致）
+  function normalizeForMatch(value) {
+    return String(value ?? '')
+      .replace(/<[^>]*>/g, '')
+      .replace(/&nbsp;/gi, ' ')
+      .replace(/&amp;/gi, '&')
+      .replace(/&quot;/gi, '"')
+      .replace(/[\u200b-\u200f\u2028\u2029\ufeff]/g, '')
+      .replace(/\s+/g, '');
+  }
+
+  console.log(`✅ 发布成功${result.tid ? `（tid=${result.tid}）` : result.duplicate ? '（已存在，未重复）' : ''}`);
 
   appendHistory(
     state,

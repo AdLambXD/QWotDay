@@ -22,7 +22,7 @@ concurrency:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 20
 
     steps:
       - name: 检出仓库
@@ -33,9 +33,9 @@ jobs:
         with:
           node-version: '20'
 
-      - name: 随机延迟（仅定时触发）
+      - name: 随机延迟（仅定时触发，降低与云主机撞车的概率）
         if: github.event_name == 'schedule'
-        run: sleep $((RANDOM % 600))
+        run: sleep $((RANDOM % 300))
 
       - name: 发布每日一言
         env:

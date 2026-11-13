@@ -138,6 +138,11 @@ mkdir -p "$APP_DIR/deploy/napcat/config" "$APP_DIR/deploy/ntqq"
   NAPCAT_UID="$(id -u)" NAPCAT_GID="$(id -g)" docker compose up -d
 )
 
+# ---------- 日志文件 ----------
+log '创建日志文件'
+touch /var/log/qwotday.log
+chmod 600 /var/log/qwotday.log
+
 # ---------- 定时任务 ----------
 log '写入定时任务 /etc/cron.d/qwotday'
 cat > /etc/cron.d/qwotday <<EOF

@@ -165,7 +165,20 @@ export async function inspectCookie({ cookie, uin, gtk, timeoutMs = 20000 }) {
       reason: `未检测到登录态（主页 HTTP ${response.status}）`,
     };
   } catch (error) {
-    return { ok: false, qzonetoken: '', reason: `网络错误：${error.message}` };
+    // 区分网络错误和登录态错误，网络错误不当作登录态失效
+    const isNetworkError =
+      error.name === 'AbortError' ||
+      error.code === 'ENOTFOUND' ||
+      error.code === 'ECONNREFUSED' ||
+      error.message.includes('timeout') ||
+      error.message.includes('fetch failed');
+
+    return {
+      ok: false,
+      qzonetoken: '',
+      reason: isNetworkError ? `网络错误：${error.message}` : `登录态校验失败：${error.message}`,
+      isNetworkError,
+    };
   }
 }
 
@@ -221,7 +234,13 @@ export async function publishPost({ cookie, uin, text, gtk, qzonetoken, timeoutM
   }
 
   const code = Number(data.code ?? data.ret ?? 0);
-  if (code === 0) return data;
+  if (code === 0) {
+    // 必须拿到 tid 或 feedid 才算成功，避免空响应被误判
+    if (!data.tid && !data.feedid) {
+      throw new Error(`发布接口返回成功但没有 tid/feedid：${JSON.stringify(data).slice(0, 200)}`);
+    }
+    return data;
+  }
 
   const message = String(data.message || data.msg || data.subcode || '').trim();
   if (code === -3000 || authErrorFrom(message)) {

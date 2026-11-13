@@ -19,6 +19,7 @@ const dryRun = passArgs.includes('--dry') || process.env.DRY_RUN === '1';
 const API = String(process.env.NAPCAT_API_URL || 'http://127.0.0.1:3000').replace(/\/+$/, '');
 const TOKEN = String(process.env.NAPCAT_TOKEN || '').trim();
 const ALERT_QQ = String(process.env.ALERT_QQ || '').replace(/\D/g, '');
+const ALLOWED_UIN = String(process.env.QZONE_UIN || '').replace(/\D/g, '');
 
 // 把日志里可能很长的内容截断，避免消息刷屏
 function shorten(text, max = 300) {
@@ -54,7 +55,6 @@ async function main() {
 
   try {
     ({ cookie, uin } = await fetchNapCatCookie());
-    console.log(`🚀 NapCat 已就绪：QQ ${uin}`);
   } catch (error) {
     const message = error instanceof NapCatError ? error.message : String(error.message);
     console.error(`\n❌ ${message}`);
@@ -64,6 +64,17 @@ async function main() {
     process.exitCode = 1;
     return;
   }
+
+  // 校验：只允许配置的小号发帖，防止登错号
+  if (ALLOWED_UIN && ALLOWED_UIN !== uin) {
+    const errorMsg = `⚠️  NapCat 登录的是 ${uin}，但配置只允许 ${ALLOWED_UIN} 发帖。已拒绝执行，防止发到错误账号。`;
+    console.error(`\n${errorMsg}`);
+    await sendAlert(`【每日一言】账号不匹配，拒绝发帖！\n预期：${ALLOWED_UIN}，实际：${uin}\n请检查 NapCat 登录状态。`);
+    process.exitCode = 1;
+    return;
+  }
+
+  console.log(`🚀 NapCat 已就绪：QQ ${uin}`);
 
   const child = spawn(process.execPath, [resolve(HERE, 'index.mjs'), ...passArgs], {
     stdio: 'inherit',

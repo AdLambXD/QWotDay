@@ -86,7 +86,7 @@ export async function fetchNapCatCookie({
     .replace(/^o/i, '')
     .replace(/\D/g, '');
 
-  if (!uin) throw new NapCatError(`NapCat 返回的 Cookie 里没有 uin：${cookies.slice(0, 120)}`);
+  if (!uin) throw new NapCatError('NapCat 返回的 Cookie 里没有 uin（可能未登录 QQ）');
 
   const secret = map.get('p_skey') || map.get('skey') || '';
   if (!secret) {
