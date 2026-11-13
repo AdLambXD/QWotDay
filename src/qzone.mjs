@@ -252,13 +252,24 @@ export async function verifyPublished({
   text,
   timeoutMs = 20000,
 }) {
+  const list = await recentPostContents({ cookie, uin, gtk, timeoutMs });
+  const needle = normalizeForMatch(text).slice(0, 30);
+
+  return {
+    found: needle.length > 0 && list.some((item) => item.includes(needle)),
+    latest: list[0] ? list[0].slice(0, 60) : '',
+  };
+}
+
+/** 取最近几条说说的正文（已去掉标签和空白，方便做包含判断） */
+export async function recentPostContents({ cookie, uin, gtk, num = 10, timeoutMs = 20000 }) {
   const url = new URL(MSGLIST_URL);
   url.search = new URLSearchParams({
     uin,
     ftype: '0',
     sort: '0',
     pos: '0',
-    num: '5',
+    num: String(num),
     replynum: '0',
     g_tk: String(gtk),
     callback: '_preloadCallback',
@@ -275,10 +286,6 @@ export async function verifyPublished({
   const raw = await response.text();
   const data = parseJsonLoose(raw);
   const list = Array.isArray(data?.msglist) ? data.msglist : [];
-  const needle = normalizeForMatch(text).slice(0, 30);
 
-  return {
-    found: needle.length > 0 && list.some((item) => normalizeForMatch(item?.content).includes(needle)),
-    latest: normalizeForMatch(list[0]?.content).slice(0, 60),
-  };
+  return list.map((item) => normalizeForMatch(item?.content));
 }

@@ -97,6 +97,8 @@ export function readConfig() {
     verifyDelayMs:
       positiveNumber(process.env.VERIFY_DELAY_SECONDS, 45, { allowZero: true }) * 1000,
     dedupeDays: positiveNumber(process.env.DEDUPE_DAYS, 30),
+    skipIfPostedToday:
+      process.env.SKIP_IF_POSTED_TODAY === 'true' || process.env.SKIP_IF_POSTED_TODAY === '1',
     timeZone: (process.env.TIMEZONE || 'Asia/Shanghai').trim(),
     statePath: (process.env.STATE_PATH || 'data/state.json').trim(),
   };

@@ -13,6 +13,7 @@ import {
   inspectCookie,
   parseCookie,
   publishPost,
+  recentPostContents,
   verifyPublished,
 } from './qzone.mjs';
 
@@ -123,6 +124,19 @@ async function main() {
 
   console.log(`   来源：${quote.fromWho || '佚名'}${quote.from ? `《${quote.from}》` : ''}`);
   console.log(`   uuid：${quote.uuid || '(无)'}`);
+
+  // 备用通道（GitHub Actions）用：如果今天已经发过就跳过，避免一天两条
+  if (config.skipIfPostedToday && config.cookie) {
+    try {
+      const recent = await recentPostContents({ cookie: config.cookie, uin, gtk });
+      if (recent.some((item) => item.includes(date.short))) {
+        console.log(`⏭  空间里已经有「${date.short}」的说说，本次跳过。`);
+        return;
+      }
+    } catch (error) {
+      warn(`检查今日是否已发布失败，继续执行：${error.message}`);
+    }
+  }
 
   if (config.dryRun) {
     if (config.cookie) {
