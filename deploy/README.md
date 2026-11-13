@@ -173,19 +173,56 @@ tail -f /var/log/qwotday.log
 
 ---
 
-## 7. 收尾：关掉 GitHub Actions 的定时
+## 7. 收尾：GitHub Actions 作为备用通道
 
-两边同时开会导致一天发两条。云上跑通之后，去仓库
-**Settings → Actions → Workflow permissions** 保持不动，只要把 workflow 的定时去掉：
+云主机是主通道，GitHub Actions 是备用，两者不会重复发帖：
 
-打开 `.github/workflows/daily-qzone.yml`，删掉或注释掉这几行：
+| 时间（北京时间） | 谁 | 做什么 |
+| --- | --- | --- |
+| 07:12 | 云主机 | 把当前 Cookie 同步到仓库 Secret（`scripts/push-secret.mjs`） |
+| 07:17 | 云主机 | 取一言 → 发布 → 回读校验 |
+| 12:17 | GitHub Actions | 检查空间里有没有今天的说说，**有就跳过**，没有才补发 |
 
-```yaml
-  schedule:
-    - cron: '17 23 * * *'
+`SKIP_IF_POSTED_TODAY=1` 就是这个判断开关（工作流里已配好）。所以：
+
+- 云主机正常 → Actions 什么都不做
+- 云主机挂了 / 掉线 → Actions 用 07:12 同步过去的 Cookie 补发
+- 两边都失败 → 云主机通过 NapCat 给你发一条 QQ 提醒（`.env` 里的 `ALERT_QQ`）
+
+### 同步 Cookie 需要 GitHub CLI
+
+```bash
+# 服务器上装一次 gh，然后登录（只需要做一次）
+gh auth login --hostname github.com --web
 ```
 
-保留 `workflow_dispatch` 手动触发即可。
+`.env` 里配置：
+
+```dotenv
+GITHUB_REPO=AdLambXD/QWotDay
+ALERT_QQ=你的主号
+```
+
+手动同步一次：
+
+```bash
+cd /opt/qwotday && node scripts/push-secret.mjs
+```
+
+---
+
+## 8. 日常维护
+
+```bash
+bash /opt/qwotday/deploy/health.sh   # 体检：容器 / 登录态 / Cookie / 最近发帖
+tail -f /var/log/qwotday.log         # 日志
+```
+
+**哪天断了怎么办**
+
+1. `health.sh` 显示「正在等待扫码」→ 小号被挤下线了，用 SSH 隧道打开 WebUI 重新扫码
+2. 显示「取 Cookie 失败」→ `docker logs --tail 100 napcat` 看原因
+3. 一切正常但没发 → 看 `/var/log/qwotday.log`
 
 ---
 
