@@ -126,7 +126,7 @@ async function main() {
   console.log(`   uuid：${quote.uuid || '(无)'}`);
 
   // 每天条数上限：超了就跳过（GitHub Actions 备用通道靠它避免多发）
-  if (config.maxPostsPerDay > 0 && config.cookie) {
+  if (config.maxPostsPerDay > 0 && config.cookie && !config.dryRun) {
     try {
       const recent = await recentPostContents({
         cookie: config.cookie,
