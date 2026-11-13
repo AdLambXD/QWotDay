@@ -3,10 +3,10 @@
 // 用法：node scripts/push-secret.mjs [--force]
 // 需要：服务器上已 gh auth login，且 GITHUB_REPO=owner/repo
 import { spawnSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 
 import { loadEnvFiles } from '../src/config.mjs';
-import { fetchNapCatCookie, NapCatError } from '../src/napcat.mjs';
+import { fetchNapCatCookie } from '../src/napcat.mjs';
 import { hash33, inspectCookie, parseCookie } from '../src/qzone.mjs';
 
 loadEnvFiles();
@@ -65,6 +65,47 @@ function repoSlug() {
   return '';
 }
 
+const ALERT_QQ = String(process.env.ALERT_QQ || '').replace(/\D/g, '');
+const ALERT_STAMP = process.env.ALERT_STAMP || '/var/log/.qwotday-sync-alert';
+const API = String(process.env.NAPCAT_API_URL || 'http://127.0.0.1:3000').replace(/\/+$/, '');
+const TOKEN = String(process.env.NAPCAT_TOKEN || '').trim();
+
+/** 同一天只提醒一次，避免每 6 小时刷屏 */
+function alertAlreadySentToday() {
+  try {
+    return readFileSync(ALERT_STAMP, 'utf8').trim() === new Date().toISOString().slice(0, 10);
+  } catch {
+    return false;
+  }
+}
+
+function markAlertSent() {
+  try {
+    writeFileSync(ALERT_STAMP, `${new Date().toISOString().slice(0, 10)}\n`, 'utf8');
+  } catch {
+    /* 写不了就算了 */
+  }
+}
+
+async function sendAlert(message) {
+  if (!ALERT_QQ) return;
+
+  try {
+    await fetch(`${API}/send_private_msg`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        ...(TOKEN ? { authorization: `Bearer ${TOKEN}` } : {}),
+      },
+      body: JSON.stringify({ user_id: Number(ALERT_QQ), message }),
+      signal: AbortSignal.timeout(15000),
+    });
+    markAlertSent();
+  } catch (error) {
+    console.error(`⚠️  提醒发送失败：${error.message}`);
+  }
+}
+
 async function main() {
   const force = process.argv.includes('--force');
 
@@ -92,11 +133,17 @@ async function main() {
   console.log(`   QQ ${uin}，Cookie ${cookie.length} 字符`);
 }
 
-main().catch((error) => {
-  if (error instanceof NapCatError) {
-    console.error(`❌ ${error.message}`);
-  } else {
-    console.error(`❌ ${error.message}`);
+main().catch(async (error) => {
+  console.error(`❌ ${error.message}`);
+  console.error('   （只是备用通道同步失败，云主机自己发帖不受影响）');
+
+  if (!alertAlreadySentToday()) {
+    await sendAlert(
+      '【每日一言】Cookie 同步到 GitHub Secret 失败，备用通道暂时不可用。\n' +
+        `原因：${String(error.message).slice(0, 200)}\n` +
+        '服务器上跑：bash /opt/qwotday/deploy/health.sh',
+    );
   }
+
   process.exitCode = 1;
 });

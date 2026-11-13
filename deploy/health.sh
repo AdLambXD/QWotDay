@@ -44,6 +44,10 @@ else
 fi
 
 echo
+echo "== 最近一次 Cookie 同步 =="
+grep -E '已同步到' /var/log/qwotday.log 2>/dev/null | tail -2 || echo "（还没有记录）"
+
+echo
 echo "== 最近一次发帖 =="
 tail -n 40 /var/log/qwotday.log 2>/dev/null | grep -E '发布成功|回读校验|❌' | tail -4 \
   || echo "（还没有日志，或今天还没跑）"

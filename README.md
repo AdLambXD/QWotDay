@@ -75,8 +75,8 @@ data/state.json    发布记录
 | 成本 | 免费 | 免费（有台能常开的机器就行） |
 | 门槛 | 复制一次 Cookie | 会 SSH，约 40 分钟一次性配置 |
 
-**B 方案**见 **[deploy/README.md](deploy/README.md)**。它同时把 A 方案当作备用：云主机每天把新
-Cookie 同步到 Secret，Actions 在 12:17 检查「今天发过没有」，发过就跳过、没发才补发。
+**B 方案**见 **[deploy/README.md](deploy/README.md)**。它同时把 A 方案当作备用：云主机每 6 小时把
+新 Cookie 同步到 Secret，Actions 在 12:17 检查「今天发过没有」，发过就跳过、没发才补发。
 下面第 1~5 节是 **A 方案**的完整步骤，在没有服务器时仍然可用。
 
 ---
