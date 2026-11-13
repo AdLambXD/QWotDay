@@ -44,21 +44,10 @@ Oracle 云主机（永久免费）
 
 4. 创建完成后记下 **Public IP address**。
 
-### 放行端口（两处都要做）
+### 放行端口
 
-**a. 云控制台安全列表**：实例详情 → 点击 VCN → **Security Lists** → 默认安全列表 →
-**Add Ingress Rule**：
-
-| Source CIDR | IP Protocol | Destination Port Range |
-| --- | --- | --- |
-| `0.0.0.0/0` | TCP | `6099` |
-
-**b. 实例内部的 iptables**（Oracle 的 Ubuntu 镜像默认只放行 22，非常容易漏）：
-
-```bash
-sudo iptables -I INPUT 6 -m state --state NEW -p tcp --dport 6099 -j ACCEPT
-sudo netfilter-persistent save
-```
+只需要放行 **22**（SSH）。WebUI 只监听 `127.0.0.1:6099`，通过 SSH 隧道访问，不需要
+在安全组里开 6099，也不怕被扫到。
 
 ---
 
@@ -97,22 +86,22 @@ sudo bash /tmp/qwotday/deploy/setup.sh
 
 ## 4. 扫码登录小号
 
+先在自己电脑上开一条隧道（另开一个终端窗口，保持不关）：
+
 ```bash
-docker logs -f napcat
+ssh -L 6099:127.0.0.1:6099 root@<服务器IP>
 ```
 
-日志里会出现两样东西：
+然后看容器日志拿 WebUI 的 token：
 
-- **WebUI 地址**：`http://<公网IP>:6099/webui/`
-- **Token**（一串随机字符，之后还要用）
+```bash
+docker logs napcat 2>&1 | grep -i token
+```
 
-浏览器打开 WebUI → 输入 token → **QRCode → 扫码**，用手机上的**小号**确认登录。
+浏览器打开 <http://127.0.0.1:6099/webui/>，填入 token → **QRCode → 扫码**，
+用手机上的**小号**确认登录。
 
-登录成功后，把控制台里的二维码页关掉，**立刻把 6099 端口关掉**（控制台删掉那条 Ingress 规则 +
-`sudo iptables -D INPUT -p tcp --dport 6099 -j ACCEPT`），只留 22 和本机 3000。
-
-> 之后想再进 WebUI，用 SSH 隧道更安全：
-> `ssh -L 6099:127.0.0.1:6099 ubuntu@<公网IP>`，然后访问 `http://127.0.0.1:6099/webui/`
+登录成功后关掉隧道即可，6099 从头到尾没有对公网开放过。
 
 ---
 
@@ -191,6 +180,22 @@ tail -f /var/log/qwotday.log
 ---
 
 ## 常见问题
+
+**Q：`docker pull` 卡住 / `context deadline exceeded`？**
+
+国内服务器直连 Docker Hub 经常超时。用镜像站拉下来再打回原名：
+
+```bash
+docker pull docker.m.daocloud.io/mlikiowa/napcat-docker:latest
+docker tag  docker.m.daocloud.io/mlikiowa/napcat-docker:latest mlikiowa/napcat-docker:latest
+cd /opt/qwotday/deploy && docker compose up -d
+```
+
+**Q：服务器在国内，`git clone` 拉不下来？**
+
+在本地把仓库打成 tar.gz（排除 `.git`、`node_modules`、`logs`、`.env.local`），用
+`scp` / 1Panel 文件管理 / SFTP 传到服务器，解压到 `/opt/qwotday` 再跑 `setup.sh`。
+`setup.sh` 发现 `/opt/qwotday/src/server.mjs` 已存在就会跳过克隆。
 
 **Q：`docker compose up` 报 `no matching manifest for linux/arm64`？**
 
