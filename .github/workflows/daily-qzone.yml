@@ -1,10 +1,10 @@
 name: 每日一言 · QQ空间
 
 on:
-  # 主通道是云主机（每天 07:17 北京时间，见 deploy/README.md）。
-  # 这里 12:17 跑一次备用：如果云主机已经发过，脚本检测到当天日期就自动跳过。
+  # 主通道是云主机（每天 07:17 / 19:17 北京时间，见 deploy/README.md）。
+  # 这里 21:17 跑一次备用：当天条数已达上限就跳过，没发够才补一条。
   schedule:
-    - cron: '17 4 * * *'
+    - cron: '17 13 * * *'
   workflow_dispatch:
     inputs:
       dry_run:
@@ -45,7 +45,7 @@ jobs:
           POST_TAG: ${{ vars.POST_TAG }}
           HITOKOTO_CATEGORIES: ${{ vars.HITOKOTO_CATEGORIES }}
           STRICT_VERIFY: ${{ vars.STRICT_VERIFY }}
-          SKIP_IF_POSTED_TODAY: '1'
+          MAX_POSTS_PER_DAY: '2'
           DRY_RUN: ${{ github.event.inputs.dry_run == 'true' && '1' || '' }}
         run: node src/index.mjs
 

@@ -127,6 +127,7 @@ data/state.json    发布记录
 | `POST_TAG` | `#每日一言` | 话题标签；只有模板里写了 `{tag}` 才会出现，填 `-` 表示不显示 |
 | `HITOKOTO_CATEGORIES` | `d,i,k` | 一言分类，逗号分隔；`all` 表示不限 |
 | `STRICT_VERIFY` | `false` | 回读校验失败时是否让任务报错 |
+| `MAX_POSTS_PER_DAY` | `0`（不限） | 当天最多发几条；Actions 备用通道靠它避免多发 |
 
 默认模板（实际是多行）：
 

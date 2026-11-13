@@ -125,16 +125,26 @@ async function main() {
   console.log(`   来源：${quote.fromWho || '佚名'}${quote.from ? `《${quote.from}》` : ''}`);
   console.log(`   uuid：${quote.uuid || '(无)'}`);
 
-  // 备用通道（GitHub Actions）用：如果今天已经发过就跳过，避免一天两条
-  if (config.skipIfPostedToday && config.cookie) {
+  // 每天条数上限：超了就跳过（GitHub Actions 备用通道靠它避免多发）
+  if (config.maxPostsPerDay > 0 && config.cookie) {
     try {
-      const recent = await recentPostContents({ cookie: config.cookie, uin, gtk });
-      if (recent.some((item) => item.includes(date.short))) {
-        console.log(`⏭  空间里已经有「${date.short}」的说说，本次跳过。`);
+      const recent = await recentPostContents({
+        cookie: config.cookie,
+        uin,
+        gtk,
+        num: 20,
+      });
+      const todayCount = recent.filter((item) => item.includes(date.short)).length;
+
+      if (todayCount >= config.maxPostsPerDay) {
+        console.log(
+          `⏭  今天已经发了 ${todayCount} 条（上限 ${config.maxPostsPerDay} 条），本次跳过。`,
+        );
         return;
       }
+      console.log(`   今天已发 ${todayCount}/${config.maxPostsPerDay} 条`);
     } catch (error) {
-      warn(`检查今日是否已发布失败，继续执行：${error.message}`);
+      warn(`检查今日已发条数失败，继续执行：${error.message}`);
     }
   }
 

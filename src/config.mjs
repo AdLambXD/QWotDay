@@ -97,8 +97,8 @@ export function readConfig() {
     verifyDelayMs:
       positiveNumber(process.env.VERIFY_DELAY_SECONDS, 45, { allowZero: true }) * 1000,
     dedupeDays: positiveNumber(process.env.DEDUPE_DAYS, 30),
-    skipIfPostedToday:
-      process.env.SKIP_IF_POSTED_TODAY === 'true' || process.env.SKIP_IF_POSTED_TODAY === '1',
+    // 每天最多发几条；0 表示不做限制
+    maxPostsPerDay: positiveNumber(process.env.MAX_POSTS_PER_DAY, 0, { allowZero: true }),
     timeZone: (process.env.TIMEZONE || 'Asia/Shanghai').trim(),
     statePath: (process.env.STATE_PATH || 'data/state.json').trim(),
   };

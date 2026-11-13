@@ -37,7 +37,8 @@ export function getDateParts(timeZone) {
 export function renderPost({ template, quote, tag, timeZone }) {
   const date = getDateParts(timeZone);
   const author = cleanInline(quote.fromWho);
-  const source = cleanInline(quote.from);
+  // 有些出处本身就带书名号（如「《百年孤独》」），这里去掉外层，避免变成《《百年孤独》》
+  const source = cleanInline(quote.from).replace(/^《(.+)》$/, '$1');
 
   let attribution = '';
   if (author && source) attribution = `——${author}《${source}》`;

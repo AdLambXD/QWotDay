@@ -11,6 +11,7 @@ set -euo pipefail
 REPO_URL="${REPO_URL:-https://github.com/AdLambXD/QWotDay.git}"
 APP_DIR="${APP_DIR:-/opt/qwotday}"
 RUN_AT="${RUN_AT:-17 7 * * *}"
+RUN_AT2="${RUN_AT2:-17 19 * * *}"
 TARGET_UIN="${QZONE_UIN:-}"
 
 log() { printf '\n\033[36m==> %s\033[0m\n' "$*"; }
@@ -107,6 +108,9 @@ QZONE_UIN=${TARGET_UIN}
 
 TIMEZONE=Asia/Shanghai
 
+# 每天最多发几条（0 = 不限制），用于防止备用通道多发
+MAX_POSTS_PER_DAY=2
+
 # 同步 Cookie 到 GitHub Secret（备用通道）用，格式 owner/repo；留空则不同步
 GITHUB_REPO=
 
@@ -138,10 +142,18 @@ mkdir -p "$APP_DIR/deploy/napcat/config" "$APP_DIR/deploy/ntqq"
 log '写入定时任务 /etc/cron.d/qwotday'
 cat > /etc/cron.d/qwotday <<EOF
 SHELL=/bin/bash
+HOME=/root
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 CRON_TZ=Asia/Shanghai
+# 每 6 小时同步 Cookie 到 GitHub Secret（备用通道）
+12 1,7,13,19 * * * root cd $APP_DIR && $NODE_BIN scripts/push-secret.mjs >> /var/log/qwotday.log 2>&1
+# 每天第一条
 ${RUN_AT} root cd $APP_DIR && $NODE_BIN src/server.mjs >> /var/log/qwotday.log 2>&1
 EOF
+if [ -n "${RUN_AT2:-}" ]; then
+  echo "# 每天第二条" >> /etc/cron.d/qwotday
+  echo "${RUN_AT2} root cd $APP_DIR && $NODE_BIN src/server.mjs >> /var/log/qwotday.log 2>&1" >> /etc/cron.d/qwotday
+fi
 chmod 644 /etc/cron.d/qwotday
 chmod +x "$APP_DIR/deploy/run.sh" 2>/dev/null || true
 
