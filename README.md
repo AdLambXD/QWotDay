@@ -67,16 +67,16 @@ data/state.json    发布记录
 
 ## 两种部署方式
 
-| | **A. GitHub Actions**（默认） | **B. 云主机 + NapCat** |
+| | **A. GitHub Actions** | **B. 云主机 + NapCat**（当前采用） |
 | --- | --- | --- |
 | 谁在发帖 | GitHub 的服务器 | 你自己的云主机 |
 | 登录态 | Cookie，会过期，要手动/半自动续 | NapCat 常驻在线，**每次现取现用，不会过期** |
 | 电脑要开着吗 | 偶尔开一次换票就行 | **完全不用** |
-| 成本 | 免费 | 免费（Oracle Cloud 永久免费额度） |
+| 成本 | 免费 | 免费（有台能常开的机器就行） |
 | 门槛 | 复制一次 Cookie | 会 SSH，约 40 分钟一次性配置 |
 
-下面第 1~5 节讲的是 **A 方案**。想彻底摆脱 Cookie 过期，直接看
-**[deploy/README.md](deploy/README.md)**（B 方案完整步骤）。
+**B 方案**见 **[deploy/README.md](deploy/README.md)**。下面第 1~5 节是 **A 方案**的完整步骤，
+在没有服务器时仍然可用（用 GitHub Secrets 存 Cookie）。
 
 ---
 

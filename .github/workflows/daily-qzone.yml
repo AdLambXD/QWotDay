@@ -1,10 +1,8 @@
 name: 每日一言 · QQ空间
 
 on:
-  schedule:
-    # GitHub Actions 使用 UTC：23:17 UTC = 北京时间次日 07:17
-    # 避开整点高峰，减少被延迟或丢弃的概率
-    - cron: '17 23 * * *'
+  # 定时发布已经迁移到云主机（见 deploy/README.md），这里只保留手动触发，
+  # 避免两边同时发导致一天两条。
   workflow_dispatch:
     inputs:
       dry_run:
