@@ -110,6 +110,16 @@ EOF
 fi
 chmod 600 "$APP_DIR/.env"
 
+# docker compose 会自动读取同目录下的 .env，这里放容器参数
+if [ ! -f "$APP_DIR/deploy/.env" ]; then
+  cat > "$APP_DIR/deploy/.env" <<EOF
+NAPCAT_UID=$(id -u)
+NAPCAT_GID=$(id -g)
+NAPCAT_QQ=${TARGET_UIN}
+EOF
+  chmod 600 "$APP_DIR/deploy/.env"
+fi
+
 # ---------- NapCat ----------
 log '启动 NapCat'
 mkdir -p "$APP_DIR/deploy/napcat/config" "$APP_DIR/deploy/ntqq"

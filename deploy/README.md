@@ -103,6 +103,9 @@ docker logs napcat 2>&1 | grep -i token
 
 登录成功后关掉隧道即可，6099 从头到尾没有对公网开放过。
 
+> **以后再重启容器需要重新扫码吗？** 不需要。`deploy/.env` 里的 `NAPCAT_QQ` 会让容器带
+> `-q` 参数启动，走快速登录。前提是首次登录后让它跑够十几秒再重启（凭证需要落盘）。
+
 ---
 
 ## 5. 配置 HTTP 接口 + Token
@@ -113,9 +116,15 @@ WebUI → 左侧 **网络配置** → 新建 **HTTP 服务器**：
 | --- | --- |
 | Host | `0.0.0.0` |
 | Port | `3000` |
-| Token | 自己设一串（或者用自动生成的） |
+| Token | 用 `cat /opt/qwotday/.env` 里 `NAPCAT_TOKEN` 的值 |
 
 保存后启用。容器已经把 3000 映射到宿主机的 `127.0.0.1:3000`，外网访问不到，安全。
+
+> 也可以直接改配置文件（不用开 WebUI）：
+>
+> `/opt/qwotday/deploy/napcat/config/onebot11_<QQ号>.json` 的
+> `network.httpServers` 里加一项 `{"name":"qwotday","enable":true,"host":"0.0.0.0","port":3000,"token":"..."}`，
+> 然后重启容器。
 
 把 token 写进 `.env`：
 

@@ -2,6 +2,8 @@
 # 启动：docker compose up -d
 # 日志：docker logs -f napcat          （首次启动会打印 WebUI token）
 # 升级：docker compose pull && docker compose up -d
+#
+# 同目录下的 .env 提供 NAPCAT_QQ / NAPCAT_UID / NAPCAT_GID（由 setup.sh 生成）
 name: qwotday
 
 services:
@@ -9,8 +11,9 @@ services:
     image: mlikiowa/napcat-docker:latest
     container_name: napcat
     restart: unless-stopped
+    # -q 指定快速登录的 QQ 号：有了它，重启容器不用重新扫码
+    command: ['-q', '${NAPCAT_QQ:-}']
     environment:
-      # 让容器内写出的文件属于当前用户，避免权限问题（id -u / id -g 的返回值）
       - NAPCAT_UID=${NAPCAT_UID:-0}
       - NAPCAT_GID=${NAPCAT_GID:-0}
       - TZ=Asia/Shanghai
